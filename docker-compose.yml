@@ -1,0 +1,40 @@
+# Lê as credenciais do arquivo .env (copie de .env.example). Sem senha, o compose se recusa a subir.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pipeline}
+      POSTGRES_USER: ${POSTGRES_USER:-pipeline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no arquivo .env}
+    ports:
+      # Só na máquina local; mude a porta do host com POSTGRES_PORT se a 5432 estiver ocupada
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    # Só roda sob demanda (make run => docker compose run --rm app); não sobe com `up`
+    profiles: ["run"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pipeline}
+      POSTGRES_USER: ${POSTGRES_USER:-pipeline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no arquivo .env}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      PIPELINE_FONTES: ${PIPELINE_FONTES:-ai4i,simulado}
+      PIPELINE_SEMENTE: ${PIPELINE_SEMENTE:-42}
+    volumes:
+      - ./data:/app/data
+
+volumes:
+  pgdata:
