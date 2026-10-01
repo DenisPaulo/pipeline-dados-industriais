@@ -1,0 +1,24 @@
+# Dados (baixados/gerados localmente — não versionar)
+data/raw/
+data/processed/*
+!data/processed/.gitkeep
+*.csv
+*.zip
+*.parquet
+
+# Segredos e configuração local
+.env
+
+# Ambiente Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Sistema / editores
+.DS_Store
+.vscode/
+.idea/
