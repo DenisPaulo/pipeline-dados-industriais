@@ -153,7 +153,7 @@ erDiagram
 - `ruff` (lint e formatação) e 31 testes rápidos: passam localmente e no CI.
 - 3 testes de integração (idempotência, reprocessamento com atualização, rollback por constraint) passam contra PostgreSQL real, localmente e no CI.
 - Pipeline ponta a ponta contra um PostgreSQL 17 local, executado duas vezes (a segunda não altera nada) e todas as consultas de `sql/queries.sql` executadas sem erro.
-- **Não executado nesta verificação:** o ambiente de desenvolvimento não tinha Docker. Portanto `docker-compose.yml`, `Dockerfile`, `make up` e `make run` foram escritos mas **não** foram executados; se algo falhar aí, abra uma issue.
+- **Docker testado no Windows (Docker Desktop, WSL 2):** `docker compose up -d` (PostgreSQL 16 saudável) e `docker compose run --rm --build app` rodaram de ponta a ponta com os mesmos números da execução local (26.271 linhas lidas, 24.511 válidas, 1.760 descartadas, 18 máquinas, 24.511 leituras, 586 falhas), e `SELECT count(*) FROM leituras;` retornou 24511. O alvo `make` não foi testado no Windows; use os comandos equivalentes `docker compose` da seção de execução.
 
 ## Roadmap
 
