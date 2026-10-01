@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Testes (pytest, sem rede e sem PostgreSQL)
+        run: pytest -q
+
+  integracao:
+    # Testes marcados com `integration`, contra um PostgreSQL de serviço (efêmero, só no CI)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pipeline_teste
+          POSTGRES_USER: pipeline
+          POSTGRES_PASSWORD: senha-efemera-de-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pipeline -d pipeline_teste"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      POSTGRES_DB: pipeline_teste
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: senha-efemera-de-ci
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Testes de integração (PostgreSQL)
+        run: pytest -q -m integration
