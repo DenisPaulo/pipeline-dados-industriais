@@ -1,0 +1,24 @@
+# Projeto dbt da V2: transforma, dentro do PostgreSQL, as tabelas carregadas pelo pipeline Python.
+name: pipeline_dados_industriais
+version: "0.1.0"
+config-version: 2
+
+# Nome do "perfil" de conexão (definido em profiles.yml)
+profile: pipeline_dados_industriais
+
+# Onde o dbt procura cada tipo de arquivo (caminhos relativos a esta pasta)
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+
+# Pastas geradas pelo dbt (estão no .gitignore)
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  pipeline_dados_industriais:
+    staging:
+      # Staging = limpeza leve de nomes e tipos, sem regra de negócio.
+      # Vira VIEW (não guarda dados, só uma consulta salva) no schema "staging".
+      +materialized: view
+      +schema: staging

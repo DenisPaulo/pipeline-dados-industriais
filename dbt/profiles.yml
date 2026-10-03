@@ -1,0 +1,16 @@
+# Como o dbt se conecta ao PostgreSQL. NENHUMA credencial fica neste arquivo:
+# tudo vem de variáveis de ambiente (as mesmas POSTGRES_* do .env do pipeline).
+# env_var('NOME') obriga a variável a existir; env_var('NOME', 'padrao') usa um padrão.
+pipeline_dados_industriais:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | as_number }}"
+      user: "{{ env_var('POSTGRES_USER', 'pipeline') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'pipeline') }}"
+      # Schema base; os modelos de staging usam o schema "staging" (ver macros/)
+      schema: "{{ env_var('DBT_SCHEMA', 'analytics') }}"
+      threads: 4

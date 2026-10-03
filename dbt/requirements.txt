@@ -1,0 +1,3 @@
+# Versões fixas (as mesmas usadas nos testes). dbt-postgres 1.11 exige dbt-core 1.x compatível.
+dbt-core==1.12.5
+dbt-postgres==1.11.0

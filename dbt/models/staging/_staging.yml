@@ -1,0 +1,110 @@
+version: 2
+
+# Testes do dbt: cada teste vira um SELECT que procura linhas "ruins".
+# Se encontrar alguma, o teste falha.
+models:
+  - name: stg_maquinas
+    description: Máquinas, com nomes de colunas padronizados. Uma linha por máquina.
+    columns:
+      - name: id_maquina
+        description: Identificador da máquina.
+        data_tests:
+          - unique
+          - not_null
+      - name: fonte
+        description: Origem dos dados da máquina.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["ai4i", "simulado"]
+      - name: criada_em
+        description: Momento do cadastro da máquina no banco.
+
+  - name: stg_leituras
+    description: >
+      Leituras de sensores com nomes padronizados e temperaturas também em Celsius.
+      Uma linha por (máquina, instante).
+    columns:
+      - name: id_leitura
+        description: Identificador da leitura.
+        data_tests:
+          - unique
+          - not_null
+      - name: id_maquina
+        description: Máquina que fez a leitura.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_maquinas')
+                field: id_maquina
+      - name: medido_em
+        description: Instante da leitura.
+        data_tests:
+          - not_null
+      - name: tipo_produto
+        description: Variante do produto (L, M ou H).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["L", "M", "H"]
+      - name: temperatura_ar_k
+        description: Temperatura do ar em Kelvin.
+        data_tests:
+          - not_null
+      - name: temperatura_ar_c
+        description: Temperatura do ar em Celsius (Kelvin - 273,15).
+        data_tests:
+          - not_null
+      - name: temperatura_processo_k
+        description: Temperatura do processo em Kelvin.
+        data_tests:
+          - not_null
+      - name: temperatura_processo_c
+        description: Temperatura do processo em Celsius (Kelvin - 273,15).
+        data_tests:
+          - not_null
+      - name: rotacao_rpm
+        description: Rotação do eixo em rpm.
+        data_tests:
+          - not_null
+      - name: torque_nm
+        description: Torque em newton-metro.
+        data_tests:
+          - not_null
+      - name: desgaste_min
+        description: Desgaste acumulado da ferramenta em minutos.
+        data_tests:
+          - not_null
+      - name: houve_falha
+        description: Verdadeiro se a máquina falhou nesta leitura.
+        data_tests:
+          - not_null
+
+  - name: stg_falhas
+    description: Modos de falha por leitura. Uma linha por (leitura, modo).
+    columns:
+      - name: id_falha
+        description: Identificador da falha.
+        data_tests:
+          - unique
+          - not_null
+      - name: id_leitura
+        description: Leitura em que a falha ocorreu.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_leituras')
+                field: id_leitura
+      - name: modo_falha
+        description: >
+          Modo da falha: TWF (desgaste da ferramenta), HDF (dissipação de calor), PWF (potência),
+          OSF (sobrecarga), RNF (aleatória) ou DESCONHECIDO (sem modo informado).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["TWF", "HDF", "PWF", "OSF", "RNF", "DESCONHECIDO"]

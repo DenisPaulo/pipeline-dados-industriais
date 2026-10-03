@@ -36,5 +36,26 @@ services:
     volumes:
       - ./data:/app/data
 
+  dbt:
+    # V2: transformações com dbt dentro do PostgreSQL. Só roda sob demanda:
+    #   docker compose run --rm --build dbt build     (ou: debug, run, test, docs generate...)
+    # Pré-requisito: o pipeline Python já ter carregado os dados (make run).
+    build: ./dbt
+    profiles: ["dbt"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pipeline}
+      POSTGRES_USER: ${POSTGRES_USER:-pipeline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no arquivo .env}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      # Arquivos gerados pelo dbt ficam fora da pasta montada (que é somente leitura)
+      DBT_TARGET_PATH: /tmp/dbt/target
+      DBT_LOG_PATH: /tmp/dbt/logs
+    volumes:
+      - ./dbt:/dbt:ro
+
 volumes:
   pgdata:

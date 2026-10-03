@@ -1,4 +1,4 @@
-.PHONY: help install up down run run-local test test-integration lint format queries psql clean
+.PHONY: help install up down run run-local dbt-debug dbt-build test test-integration lint format queries psql clean
 
 PY ?= python
 COMPOSE ?= docker compose
@@ -18,6 +18,12 @@ down: ## Derruba os serviços (mantém o volume do banco)
 
 run: up ## Roda o pipeline completo dentro do Docker (ingestão -> limpeza -> carga)
 	$(COMPOSE) run --rm --build app
+
+dbt-debug: up ## dbt: testa a conexão com o banco (V2)
+	$(COMPOSE) run --rm --build dbt debug
+
+dbt-build: up ## dbt: cria os modelos e roda os testes (V2; rode `make run` antes)
+	$(COMPOSE) run --rm --build dbt build
 
 run-local: ## Roda o pipeline no host (exige banco acessível e variáveis POSTGRES_* no ambiente)
 	PYTHONPATH=src $(PY) -m pipeline.run

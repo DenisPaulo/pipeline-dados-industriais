@@ -6,6 +6,11 @@ data/processed/*
 *.zip
 *.parquet
 
+# Arquivos gerados pelo dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+
 # Segredos e configuração local
 .env
 

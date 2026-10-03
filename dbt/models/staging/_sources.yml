@@ -1,0 +1,56 @@
+version: 2
+
+# "Sources" são as tabelas que o dbt NÃO cria: foram carregadas pelo pipeline Python
+# (src/pipeline/load.py) no schema "public". Os modelos as leem com {{ source(...) }}.
+sources:
+  - name: pipeline
+    description: >
+      Tabelas normalizadas carregadas no PostgreSQL pelo pipeline ETL em Python
+      (ingestão, limpeza e carga idempotente).
+    schema: public
+    tables:
+      - name: maquinas
+        description: Uma linha por máquina. Máquinas AI4I-xx são virtuais (decisão didática do pipeline); SIM-xx são simuladas.
+        columns:
+          - name: maquina_id
+            description: Identificador da máquina (chave primária).
+          - name: fonte
+            description: Origem dos dados da máquina, 'ai4i' (dataset público) ou 'simulado'.
+          - name: criada_em
+            description: Momento em que a máquina foi cadastrada no banco.
+
+      - name: leituras
+        description: Uma linha por leitura de sensores de uma máquina em um instante. Dados já limpos pela etapa de limpeza.
+        columns:
+          - name: leitura_id
+            description: Identificador gerado pelo banco (chave primária).
+          - name: maquina_id
+            description: Máquina que produziu a leitura (chave estrangeira para maquinas).
+          - name: ts
+            description: Instante da leitura (sem fuso horário).
+          - name: tipo_produto
+            description: Variante do produto, L (baixa), M (média) ou H (alta qualidade).
+          - name: temp_ar_k
+            description: Temperatura do ar, em Kelvin.
+          - name: temp_processo_k
+            description: Temperatura do processo, em Kelvin.
+          - name: rotacao_rpm
+            description: Rotação do eixo, em rpm.
+          - name: torque_nm
+            description: Torque, em newton-metro.
+          - name: desgaste_min
+            description: Tempo de uso acumulado da ferramenta, em minutos.
+          - name: falha
+            description: Verdadeiro se a máquina falhou nesta leitura.
+
+      - name: falhas
+        description: Uma linha por modo de falha de uma leitura com falha (uma leitura pode ter mais de um modo).
+        columns:
+          - name: falha_id
+            description: Identificador gerado pelo banco (chave primária).
+          - name: leitura_id
+            description: Leitura em que a falha ocorreu (chave estrangeira para leituras).
+          - name: modo
+            description: >
+              Modo da falha: TWF (desgaste da ferramenta), HDF (dissipação de calor), PWF (potência),
+              OSF (sobrecarga), RNF (aleatória) ou DESCONHECIDO (falha sem modo informado).
