@@ -10,6 +10,9 @@ license = { text = "MIT" }
 line-length = 110
 target-version = "py312"
 src = ["src", "tests"]
+# O ruff 0.16 também formata blocos de código dentro de arquivos Markdown. Os trechos do guia de estudo
+# são excertos didáticos com comentários alinhados à mão, então docs/ fica fora da verificação.
+extend-exclude = ["docs"]
 
 [tool.ruff.lint]
 # E/W: estilo pycodestyle; F: pyflakes; I: ordem dos imports; B: bugs comuns; UP: sintaxe moderna
