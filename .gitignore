@@ -10,6 +10,7 @@ data/processed/*
 dbt/target/
 dbt/logs/
 dbt/dbt_packages/
+dbt/.user.yml
 
 # Segredos e configuração local
 .env
