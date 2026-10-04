@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: int_leituras_enriquecidas
+    description: >
+      Uma linha por leitura (mesma contagem de stg_leituras), com a fonte da máquina, os modos de
+      falha agregados em texto e as principais medições de sensores. Evita a duplicação de leituras
+      que têm mais de um modo de falha. Base para os marts.
+    columns:
+      - name: id_leitura
+        description: Identificador da leitura.
+        data_tests:
+          - unique
+          - not_null
+      - name: id_maquina
+        description: Máquina que fez a leitura.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_maquinas')
+                field: id_maquina
+      - name: fonte
+        description: Origem dos dados da máquina ('ai4i' ou 'simulado').
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["ai4i", "simulado"]
+      - name: medido_em
+        description: Instante da leitura.
+      - name: houve_falha
+        description: Verdadeiro se a máquina falhou nesta leitura.
+      - name: modos_falha
+        description: >
+          Modos de falha da leitura separados por vírgula, em ordem alfabética (ex.: 'HDF, PWF').
+          Nulo quando não houve falha.
+      - name: qtd_modos_falha
+        description: Quantidade de modos de falha da leitura (0 quando não houve falha).
+      - name: tipo_produto
+        description: Variante do produto (L, M ou H).
+      - name: temperatura_ar_c
+        description: Temperatura do ar em Celsius.
+      - name: temperatura_processo_c
+        description: Temperatura do processo em Celsius.
+      - name: rotacao_rpm
+        description: Rotação do eixo em rpm.
+      - name: torque_nm
+        description: Torque em newton-metro.
+      - name: desgaste_min
+        description: Desgaste acumulado da ferramenta em minutos.

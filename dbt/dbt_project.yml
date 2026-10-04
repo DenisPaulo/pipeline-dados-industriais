@@ -22,3 +22,9 @@ models:
       # Vira VIEW (não guarda dados, só uma consulta salva) no schema "staging".
       +materialized: view
       +schema: staging
+    intermediate:
+      # Intermediate = junta e enriquece os dados do staging, ainda sem métricas finais.
+      # VIEW (e não table) porque o volume é pequeno (~24 mil linhas) e a view sempre reflete
+      # os dados atuais. Se ficar lenta quando os dados crescerem, troque para `table`.
+      +materialized: view
+      +schema: intermediate
