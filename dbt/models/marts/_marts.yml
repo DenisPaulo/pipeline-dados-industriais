@@ -79,3 +79,31 @@ models:
           Nulo quando não houve falha.
       - name: qtd_modos_falha
         description: Quantidade de modos de falha da leitura (0 quando não houve falha).
+
+  - name: fct_falhas_diarias
+    description: >
+      Fato agregado: uma linha por máquina e por dia com falha(s). Conta as leituras com
+      falha (qtd_falhas) e lista os conjuntos de modos distintos do dia. A unicidade da
+      chave (id_maquina, data_ref) é garantida pelo teste singular
+      fct_falhas_diarias_chave_unica (sem dbt_utils).
+    columns:
+      - name: id_maquina
+        description: Máquina (chave estrangeira para dim_maquina).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_maquina')
+                field: id_maquina
+      - name: data_ref
+        description: Dia da falha (medido_em::date).
+        data_tests:
+          - not_null
+      - name: qtd_falhas
+        description: Quantidade de leituras com falha naquele dia para a máquina.
+        data_tests:
+          - not_null
+      - name: modos_falha
+        description: >
+          Conjuntos de modos distintos do dia, separados por '; ' (cada conjunto já vem
+          agregado por leitura, ex.: 'HDF, PWF').
