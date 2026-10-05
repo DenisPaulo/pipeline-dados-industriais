@@ -2,14 +2,16 @@
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![dbt](https://img.shields.io/badge/dbt-staging%20%7C%20intermediate%20%7C%20marts-FF694B)
+![Streamlit](https://img.shields.io/badge/Streamlit-painel-FF4B4B?logo=streamlit&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
 ![Parquet](https://img.shields.io/badge/Parquet-camada%20bruta-50ABF1)
 ![Ruff](https://img.shields.io/badge/lint-ruff-D7FF64)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 [![CI](https://github.com/DenisPaulo/pipeline-dados-industriais/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisPaulo/pipeline-dados-industriais/actions/workflows/ci.yml)
 
-> **Como transformar leituras sujas de sensores em tabelas confiáveis para análise?**
-> Um pipeline ETL didático: ingestão, camada bruta em Parquet, limpeza com relatório do que foi descartado e carga idempotente em PostgreSQL. Construído por quem vem do chão de fábrica (robôs industriais, CLP e manutenção preventiva).
+> **Como transformar leituras sujas de sensores em tabelas confiáveis — e depois em um painel?**
+> Pipeline ETL + modelagem com **dbt** + painel Streamlit. Construído por quem vem do chão de fábrica (robôs industriais, CLP e manutenção preventiva).
 
 > ⚠️ **Projeto educacional / de portfólio.** Os dados são sintéticos e o pipeline não foi projetado para produção (sem orquestração, monitoramento nem controle de acesso).
 
@@ -17,95 +19,124 @@
 
 ## O que é
 
-Sensores de máquina entregam dados com falhas de verdade: células vazias, valores absurdos (temperatura em °C onde era esperado Kelvin, rotação negativa), texto no lugar de número e leituras repetidas. Este projeto mostra, de ponta a ponta, como tratar isso de forma **auditável** (nada some sem registro) e **repetível** (rodar duas vezes não duplica nada).
+Sensores de máquina entregam dados com falhas de verdade: células vazias, valores absurdos (temperatura em °C onde era esperado Kelvin, rotação negativa), texto no lugar de número e leituras repetidas. Este projeto mostra, de ponta a ponta, como tratar isso de forma **auditável** (nada some sem registro) e **repetível** (rodar duas vezes não duplica nada) — e, na V2, como modelar com **dbt** e visualizar num **painel**.
 
 Duas fontes entram no pipeline:
 
 1. **AI4I 2020**, dataset público de manutenção preditiva (10.000 registros), baixado do UCI.
 2. **Leituras simuladas**: séries por máquina geradas com semente fixa, com nulos, outliers, texto inválido e duplicatas injetados de propósito para testar a limpeza.
 
-## Fluxo
+## Fluxo (V2)
 
 ```mermaid
 flowchart LR
-    A[(UCI AI4I 2020<br/>CSV)] --> I
-    S[Simulador<br/>semente fixa] --> I
-    I[1. Ingestão] --> B[("2. Camada bruta<br/>Parquet particionado<br/>data / máquina")]
-    B --> L[3. Limpeza<br/>tipos · nulos · duplicados<br/>faixas físicas]
-    L --> R[/Relatório de<br/>linhas descartadas/]
-    L --> P[("Parquet limpo")]
-    P --> C[4. Carga idempotente<br/>COPY + ON CONFLICT]
-    C --> DB[(PostgreSQL<br/>maquinas · leituras · falhas)]
-    DB --> Q[sql/queries.sql<br/>CTEs e window functions]
+    A[(UCI AI4I 2020)] --> ETL
+    S[Simulador<br/>semente fixa] --> ETL
+    ETL["ETL Python<br/>ingestão · Parquet · limpeza · carga"] --> PUB[(PostgreSQL<br/>schema public)]
+    PUB --> STG["dbt staging<br/>views"]
+    STG --> INT["dbt intermediate<br/>views"]
+    INT --> MART["dbt marts<br/>tabelas"]
+    MART --> PAINEL[Painel Streamlit]
+    PUB --> Q[sql/queries.sql]
 ```
+
+Em palavras: o **ETL Python** limpa e carrega tabelas em `public` (`maquinas`, `leituras`, `falhas`). O **dbt** cria views em `staging` e `intermediate` e tabelas finais em `marts`. O **painel** lê só os marts.
 
 ## Como rodar
 
-Pré-requisitos: Docker com Compose v2 e `make`.
+Pré-requisitos: Docker com Compose v2 (no Windows: Docker Desktop). O `make` é opcional — os equivalentes `docker compose` estão abaixo.
 
 ```bash
 git clone https://github.com/DenisPaulo/pipeline-dados-industriais.git
 cd pipeline-dados-industriais
 
 cp .env.example .env     # defina POSTGRES_PASSWORD (obrigatória) no .env
-make up                  # sobe o PostgreSQL 16 e espera ficar saudável
-make run                 # constrói a imagem e roda ingestão -> limpeza -> carga
-make queries             # executa os exemplos de sql/queries.sql
+
+# 1) Banco
+docker compose up -d --wait postgres
+
+# 2) ETL Python (ingestão -> limpeza -> carga)
+docker compose run --rm --build app
+
+# 3) dbt (staging + intermediate + marts + testes)
+docker compose run --rm --build dbt build
+
+# 4) Painel (http://localhost:8501)
+docker compose --profile painel up -d --build painel
 ```
 
-Equivalente sem `make`: `docker compose up -d --wait postgres` e `docker compose run --rm --build app`.
-
-Outros comandos:
+Com `make` (Linux/macOS/WSL): `make up`, `make run`, `make dbt-build`, `make painel`.
 
 | Comando | O que faz |
 |---|---|
-| `make test` | Testes rápidos (pytest): sem rede e sem PostgreSQL |
-| `make test-integration` | Testes opcionais contra um PostgreSQL real (`POSTGRES_*` no ambiente) |
+| `make test` / `pytest -q` | Testes rápidos: sem rede e sem PostgreSQL |
+| `make test-integration` | Testes opcionais contra um PostgreSQL real |
 | `make lint` | `ruff check` e `ruff format --check` |
-| `make psql` | Abre um `psql` no banco do compose |
-| `make run-local` | Roda o pipeline no host (precisa de Python 3.12 e das variáveis `POSTGRES_*`) |
+| `make queries` | Executa `sql/queries.sql` no banco do compose |
+| `make psql` | Abre um `psql` no PostgreSQL do compose |
 | `make down` | Derruba os serviços (o volume do banco é mantido) |
 
-Sem Docker, é possível rodar só até a limpeza (não precisa de banco): `PYTHONPATH=src python -m pipeline.run --sem-carga`.
+Sem Docker, dá para rodar só até a limpeza: `PYTHONPATH=src python -m pipeline.run --sem-carga`.
 
-## Resultado de uma execução
+## Resultado de uma execução (números reais)
 
-Execução real, com as duas fontes e semente 42 (PostgreSQL 17 local, sem Docker; veja a seção "O que foi verificado"):
+Com as duas fontes e semente 42:
 
 | Etapa | Resultado |
 |---|---|
 | Ingestão | 26.271 linhas (10.000 AI4I + 16.271 simuladas) em 126 partições Parquet |
-| Limpeza | 24.511 válidas e **1.760 descartadas** (143 duplicadas, 1.180 com sensor nulo, 154 não numéricas, 283 fora da faixa física) |
-| Carga | 18 máquinas, 24.511 leituras, 586 registros de falha |
-| Tempo | ~3,7 s na primeira execução (inclui o download); ~1,3 s nas seguintes |
-| Idempotência | segunda execução: 0 linhas inseridas, 0 atualizadas, totais inalterados |
+| Limpeza | 24.511 válidas e **1.760 descartadas** (143 duplicadas, 1.180 sensor nulo, 154 não numéricas, 283 fora da faixa física) |
+| Carga (`public`) | 18 máquinas, 24.511 leituras, 586 registros de falha (modos) |
+| **dbt marts** | `dim_maquina` = 18; `fct_leituras` = 24.511; `fct_falhas_diarias` = 123 linhas (`sum(qtd_falhas)` = 556 leituras com falha) |
+| **dbt build** | `PASS=60` (7 modelos + 53 testes) |
+| Idempotência do ETL | segunda carga: 0 inseridas, 0 atualizadas |
 
-Nas leituras simuladas, 16.128 linhas-base + 143 duplicatas injetadas = 16.271; a limpeza descarta 1.760 linhas (os 143 duplicados e as linhas com algum sensor nulo, inválido ou fora da faixa). Os números podem variar um pouco se o UCI alterar o arquivo; a conferência é sempre `entrada = válidas + descartadas`, validada no código.
+A conferência da limpeza é sempre `entrada = válidas + descartadas`. Os 586 de `falhas` contam *modos*; os 556 de `houve_falha` / `qtd_falhas` contam *leituras* com falha (uma leitura pode ter vários modos).
+
+## Modelagem com dbt
+
+Detalhes em [`dbt/README.md`](dbt/README.md). Resumo:
+
+| Camada | Schema | Materialização | O que faz |
+|---|---|---|---|
+| **staging** | `staging` | view | Nomes claros, temperaturas também em °C (`stg_maquinas`, `stg_leituras`, `stg_falhas`) |
+| **intermediate** | `intermediate` | view | Leituras enriquecidas sem duplicar falhas (`int_leituras_enriquecidas`) |
+| **marts** | `marts` | **table** | Tabelas finais: `dim_maquina`, `fct_leituras`, `fct_falhas_diarias` |
+
+- Credenciais só por `POSTGRES_*` (mesmo `.env` do compose).
+- Testes do dbt: `unique`, `not_null`, `relationships`, `accepted_values` e testes singulares (contagem sem perda / chave composta).
+- Comando: `docker compose run --rm --build dbt build` (ou `make dbt-build`).
+
+## Painel Streamlit
+
+O painel lê **somente** as tabelas do schema `marts` (KPIs, falhas por máquina, falhas por dia, filtro por fonte, distribuição de modos).
+
+```bash
+# depois do dbt build:
+docker compose --profile painel up -d --build painel
+# abra http://localhost:8501
+```
+
+Se os marts ainda não existirem, o painel mostra um aviso pedindo para rodar o `dbt build`.
 
 ## Estrutura
 
 ```
 .
-├── src/pipeline/
-│   ├── ingest.py      # baixa o AI4I, lê as fontes e grava a camada bruta (Parquet particionado)
-│   ├── simulador.py   # gerador de leituras simuladas (semente fixa, com problemas injetados)
-│   ├── clean.py       # limpeza: tipos, duplicados, nulos, faixas físicas + relatório
-│   ├── load.py        # carga idempotente no PostgreSQL (COPY + ON CONFLICT)
-│   ├── run.py         # orquestra as etapas (python -m pipeline.run)
-│   ├── config.py      # configuração só por variáveis de ambiente
-│   └── schemas.py     # colunas, modos de falha e faixas físicas
-├── sql/
-│   ├── schema.sql     # tabelas, chaves, constraints e índices
-│   └── queries.sql    # exemplos com CTEs e window functions
-├── tests/             # pytest com dados sintéticos pequenos
-├── data/              # raw/ (ignorado), processed/ e README dos dados
-├── Dockerfile
-├── docker-compose.yml # serviços: postgres (16) e app (Python)
+├── src/pipeline/          # ETL Python (ingestão, limpeza, carga)
+├── sql/                   # schema.sql + queries.sql
+├── dbt/                   # V2: staging, intermediate, marts
+├── painel/                # V2: app Streamlit sobre os marts
+├── tests/                 # pytest
+├── data/                  # raw/ e processed/ (não versionados)
+├── docs/                  # guia de estudo
+├── Dockerfile             # imagem do ETL
+├── docker-compose.yml     # postgres, app, dbt, painel
 ├── Makefile
-└── .env.example       # placeholders; o .env real nunca é versionado
+└── .env.example
 ```
 
-## Modelo de dados
+## Modelo de dados (camada `public`)
 
 ```mermaid
 erDiagram
@@ -128,36 +159,46 @@ erDiagram
                text modo }
 ```
 
-- `leituras` tem `UNIQUE (maquina_id, ts)`: a chave natural que sustenta a carga idempotente.
-- `falhas` tem `UNIQUE (leitura_id, modo)`: uma leitura com falha pode ter mais de um modo (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`); falha sem modo informado vira `DESCONHECIDO`.
-- `CHECK`s espelham as faixas físicas válidas, então o banco também recusa valores absurdos.
-- Índices: `leituras(ts)`, parcial em `leituras(maquina_id, ts) WHERE falha`, e `falhas(modo)`.
+- `leituras` tem `UNIQUE (maquina_id, ts)`: chave natural da carga idempotente.
+- `falhas` tem `UNIQUE (leitura_id, modo)`; falha sem modo informado vira `DESCONHECIDO`.
+- `CHECK`s espelham as faixas físicas; índices em `ts`, falhas parciais e `modo`.
+
+Nos **marts**, o desenho é dimensional: `dim_maquina` (18 linhas) + `fct_leituras` (24.511) + `fct_falhas_diarias` (123).
 
 ## Decisões de design
 
-- **Bruto em texto, sem corrigir nada.** A camada bruta guarda o dado como chegou (inclusive `ERRO` e nulos). A limpeza fica reproduzível e auditável: dá para reprocessar sem baixar de novo.
-- **Particionamento por data e máquina** (`data=.../maquina_id=.../`), no estilo Hive: leituras seletivas por dia ou por máquina e fácil de evoluir para um data lake.
-- **Cada linha descartada tem exatamente um motivo**, na ordem de prioridade (duplicada, máquina ausente, timestamp inválido, tipo inválido, falha inválida, sensor nulo, não numérico, fora da faixa física). Isso fecha a conta: `entrada = válidas + descartadas`. O detalhe fica em `data/processed/relatorio.json` e as linhas em `descartadas.parquet`.
-- **Faixas físicas largas de propósito.** Elas pegam erro de sensor ou de unidade, não variação normal do processo. Descartar um valor legítimo e raro seria pior do que deixá-lo passar.
-- **Carga idempotente em uma transação:** `COPY` para tabelas temporárias e `INSERT ... ON CONFLICT` nas finais (atualiza só o que mudou). Se algo falhar, nada é gravado.
-- **Credenciais só por variáveis de ambiente.** O `docker-compose.yml` lê do `.env` e se recusa a subir sem `POSTGRES_PASSWORD`; a porta do banco só é exposta em `127.0.0.1`.
-- **"Máquinas virtuais" no AI4I.** O dataset original não tem máquina nem horário; o pipeline os atribui de forma determinística e documentada (ver [`data/README.md`](data/README.md)).
-- **Testes sem rede e sem PostgreSQL.** A limpeza, a ingestão e a serialização da carga são testadas com dados sintéticos pequenos; os testes com banco real são marcados `integration` e opcionais (o CI os executa num serviço PostgreSQL efêmero).
+- **Bruto em texto, sem corrigir nada.** A camada bruta guarda o dado como chegou. A limpeza fica auditável.
+- **Particionamento por data e máquina** (`data=.../maquina_id=.../`), no estilo Hive.
+- **Um motivo por linha descartada**, na ordem de prioridade — a conta fecha: `entrada = válidas + descartadas`.
+- **Faixas físicas largas** (erro de sensor/unidade, não variação normal).
+- **Carga idempotente** em uma transação (`COPY` + `ON CONFLICT`).
+- **Credenciais só por variáveis de ambiente**; porta do banco só em `127.0.0.1`.
+- **"Máquinas virtuais" no AI4I** (decisão didática; ver [`data/README.md`](data/README.md)).
+- **dbt em camadas** (staging → intermediate → marts); marts materializados como tabela.
+- **Painel só lê marts** (não consulta `public` nem staging).
 
-## Consultas de exemplo
+## Consultas SQL de exemplo
 
-[`sql/queries.sql`](sql/queries.sql) traz consultas com CTEs e window functions: taxa de falha por fonte e tipo de produto, **ranking de máquinas por falhas** (`RANK`), **média móvel** da temperatura (`AVG ... ROWS BETWEEN`), variação entre leituras (`LAG`), modos de falha por máquina (`ROW_NUMBER`), tempo entre falhas, quartis de desgaste (`NTILE`) e falhas acumuladas por dia.
+[`sql/queries.sql`](sql/queries.sql): CTEs e window functions (ranking de máquinas, média móvel, `LAG`, `NTILE`, falhas acumuladas). Nos marts:
+
+```sql
+SELECT id_maquina, fonte, total_leituras, total_falhas
+FROM marts.dim_maquina ORDER BY total_falhas DESC;
+
+SELECT count(*) AS n_dias_maquina, sum(qtd_falhas) AS soma_falhas
+FROM marts.fct_falhas_diarias;
+```
 
 ## O que foi verificado
 
-- `ruff` (lint e formatação) e 31 testes rápidos: passam localmente e no CI.
-- 3 testes de integração (idempotência, reprocessamento com atualização, rollback por constraint) passam contra PostgreSQL real, localmente e no CI.
-- Pipeline ponta a ponta contra um PostgreSQL 17 local, executado duas vezes (a segunda não altera nada) e todas as consultas de `sql/queries.sql` executadas sem erro.
-- **Docker testado no Windows (Docker Desktop, WSL 2):** `docker compose up -d` (PostgreSQL 16 saudável) e `docker compose run --rm --build app` rodaram de ponta a ponta com os mesmos números da execução local (26.271 linhas lidas, 24.511 válidas, 1.760 descartadas, 18 máquinas, 24.511 leituras, 586 falhas), e `SELECT count(*) FROM leituras;` retornou 24511. O alvo `make` não foi testado no Windows; use os comandos equivalentes `docker compose` da seção de execução.
+- `ruff` + 31 testes rápidos e 3 de integração (CI).
+- Pipeline ponta a ponta (Postgres local e Docker no Windows / Docker Desktop WSL 2) com os números da tabela acima.
+- `dbt build` com `PASS=60` (local e via `docker compose run --rm --build dbt`).
+- Painel: ver seção "Painel Streamlit" e o CI.
 
 ## Roadmap
 
-- **V2:** modelagem com **dbt**, testes de **qualidade de dados** (contratos de esquema, expectativas por coluna) e um **painel** para acompanhar sensores, falhas e qualidade.
+- **V2 (feito):** modelagem com **dbt** (staging, intermediate, marts + testes) e **painel** Streamlit sobre os marts.
 - **V3:** orquestração com **Airflow** e execução em **nuvem** (armazenamento de objetos para o Parquet e banco gerenciado).
 
 ## Fonte dos dados
@@ -166,7 +207,7 @@ AI4I 2020 Predictive Maintenance Dataset, UCI Machine Learning Repository, licen
 
 > AI4I 2020 Predictive Maintenance Dataset [Dataset]. (2020). UCI Machine Learning Repository. https://doi.org/10.24432/C5HS5C
 
-Autor: Stephan Matzka. Detalhes e artigo introdutório em [`data/README.md`](data/README.md).
+Citação e artigo introdutório em [`data/README.md`](data/README.md).
 
 ## Projeto relacionado
 
