@@ -69,3 +69,51 @@ jobs:
 
       - name: Testes de integração (PostgreSQL)
         run: pytest -q -m integration
+
+  dbt:
+    # Carrega o ETL no Postgres do CI e roda `dbt build` (staging + intermediate + marts + testes)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pipeline
+          POSTGRES_USER: pipeline
+          POSTGRES_PASSWORD: senha-efemera-de-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pipeline -d pipeline"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      POSTGRES_DB: pipeline
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: senha-efemera-de-ci
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      PIPELINE_FONTES: ai4i,simulado
+      PIPELINE_SEMENTE: "42"
+      DBT_PROFILES_DIR: dbt
+      DBT_PROJECT_DIR: dbt
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            dbt/requirements.txt
+
+      - name: Instalar dependências (pipeline + dbt)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r dbt/requirements.txt
+
+      - name: Carregar dados (pipeline ETL)
+        run: PYTHONPATH=src python -m pipeline.run
+
+      - name: dbt build
+        run: dbt build --project-dir dbt --profiles-dir dbt --no-use-colors
