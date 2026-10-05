@@ -1,8 +1,8 @@
 # dbt (V2): transformações dentro do PostgreSQL
 
-O pipeline Python (V1) carrega as tabelas `maquinas`, `leituras` e `falhas` no PostgreSQL. O **dbt** (*data build tool*) pega essas tabelas e cria **novas visões e tabelas usando só SQL**, com testes automáticos de qualidade. Hoje o projeto tem três camadas: **staging** (nomes de colunas claros e temperaturas também em Celsius), **intermediate** (leituras enriquecidas) e **marts** (tabelas finais para consulta; por enquanto só `dim_maquina`).
+O pipeline Python (V1) carrega as tabelas `maquinas`, `leituras` e `falhas` no PostgreSQL. O **dbt** (*data build tool*) pega essas tabelas e cria **novas visões e tabelas usando só SQL**, com testes automáticos de qualidade. Hoje o projeto tem três camadas: **staging** (nomes de colunas claros e temperaturas também em Celsius), **intermediate** (leituras enriquecidas) e **marts** (tabelas finais: `dim_maquina` e `fct_leituras`).
 
-> Projeto educacional. Os fatos (`fct_*`) e outras dimensões virão nas próximas etapas da V2.
+> Projeto educacional. Outras dimensões/fatos e o painel virão nas próximas etapas da V2.
 
 ## Arquivos
 
@@ -23,8 +23,10 @@ O pipeline Python (V1) carrega as tabelas `maquinas`, `leituras` e `falhas` no P
 | `models/intermediate/_intermediate.yml` | Descrições e 6 testes do modelo: `unique` e `not_null` em `id_leitura`, `not_null` e `relationships` (com `stg_maquinas`) em `id_maquina`, `not_null` e `accepted_values` em `fonte`. |
 | `tests/int_leituras_enriquecidas_sem_duplicacao.sql` | Teste singular (um SELECT que deve devolver 0 linhas): a contagem do intermediate tem que ser igual à do `stg_leituras`. |
 | `models/marts/dim_maquina.sql` | Dimensão de máquina: uma linha por máquina, com `fonte`, `criada_em` e totais de leituras e falhas. Materializada como **tabela** no schema `marts`. |
-| `models/marts/_marts.yml` | Descrições e testes do mart: `unique`/`not_null` em `id_maquina`, `accepted_values` em `fonte`, `not_null` em `total_leituras` e `total_falhas`. |
+| `models/marts/_marts.yml` | Descrições e testes de `dim_maquina` e `fct_leituras` (unique, not_null, relationships, accepted_values). |
 | `tests/dim_maquina_sem_perda.sql` | Teste singular: a contagem de `dim_maquina` tem que ser igual à de `stg_maquinas`. |
+| `models/marts/fct_leituras.sql` | Fato de leituras: uma linha por leitura (medidas + falha), apontando para `dim_maquina`. Tabela no schema `marts`. |
+| `tests/fct_leituras_sem_perda.sql` | Teste singular: a contagem de `fct_leituras` tem que ser igual à de `stg_leituras`. |
 
 Os arquivos que começam com `_` são só configuração (YAML); os `.sql` são os modelos.
 
@@ -50,6 +52,11 @@ Depois, no banco:
 SELECT id_maquina, medido_em, temperatura_ar_k, temperatura_ar_c FROM staging.stg_leituras LIMIT 5;
 SELECT id_leitura, modos_falha, qtd_modos_falha FROM intermediate.int_leituras_enriquecidas WHERE qtd_modos_falha > 1 LIMIT 5;
 SELECT id_maquina, fonte, total_leituras, total_falhas FROM marts.dim_maquina ORDER BY total_falhas DESC;
+SELECT count(*) FROM marts.fct_leituras;
+SELECT d.fonte, count(*) AS leituras, count(*) FILTER (WHERE f.houve_falha) AS falhas
+FROM marts.fct_leituras f
+JOIN marts.dim_maquina d USING (id_maquina)
+GROUP BY d.fonte;
 ```
 
 ## Como rodar sem Docker
@@ -64,5 +71,5 @@ dbt build --profiles-dir .
 
 ## Resultado esperado
 
-`dbt build` cria 4 views + 1 tabela e executa os testes: `Done. PASS=45 WARN=0 ERROR=0 SKIP=0 TOTAL=45` (5 modelos + 40 testes). Com a carga padrão: `staging.stg_leituras` e `intermediate.int_leituras_enriquecidas` = 24.511 linhas; `marts.dim_maquina` = 18 linhas (soma de `total_leituras` = 24.511).
+`dbt build` cria 4 views + 2 tabelas e executa os testes: `Done. PASS=54 WARN=0 ERROR=0 SKIP=0 TOTAL=54` (6 modelos + 48 testes). Com a carga padrão: `stg_leituras` / `int_leituras_enriquecidas` / `fct_leituras` = 24.511 linhas; `dim_maquina` = 18 linhas (soma de `total_leituras` = 24.511).
 Se um teste falhar, o dbt mostra qual e quantas linhas violaram a regra.
