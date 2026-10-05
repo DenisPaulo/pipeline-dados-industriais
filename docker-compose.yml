@@ -57,5 +57,24 @@ services:
     volumes:
       - ./dbt:/dbt:ro
 
+  painel:
+    # V2: painel Streamlit sobre os marts. Sobe com o profile "painel":
+    #   docker compose --profile painel up -d --build painel
+    # Pré-requisito: dbt build (schema marts). Abra http://localhost:8501
+    build: ./painel
+    profiles: ["painel"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8501:8501"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pipeline}
+      POSTGRES_USER: ${POSTGRES_USER:-pipeline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no arquivo .env}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+    restart: unless-stopped
+
 volumes:
   pgdata:

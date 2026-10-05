@@ -74,6 +74,8 @@ Com `make` (Linux/macOS/WSL): `make up`, `make run`, `make dbt-build`, `make pai
 | `make lint` | `ruff check` e `ruff format --check` |
 | `make queries` | Executa `sql/queries.sql` no banco do compose |
 | `make psql` | Abre um `psql` no PostgreSQL do compose |
+| `make dbt-build` | Roda `dbt build` (staging → intermediate → marts) |
+| `make painel` | Sobe o painel em http://localhost:8501 (`--profile painel`) |
 | `make down` | Derruba os serviços (o volume do banco é mantido) |
 
 Sem Docker, dá para rodar só até a limpeza: `PYTHONPATH=src python -m pipeline.run --sem-carga`.

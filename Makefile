@@ -1,4 +1,4 @@
-.PHONY: help install up down run run-local dbt-debug dbt-build test test-integration lint format queries psql clean
+.PHONY: help install up down run run-local dbt-debug dbt-build painel test test-integration lint format queries psql clean
 
 PY ?= python
 COMPOSE ?= docker compose
@@ -24,6 +24,9 @@ dbt-debug: up ## dbt: testa a conexão com o banco (V2)
 
 dbt-build: up ## dbt: cria os modelos e roda os testes (V2; rode `make run` antes)
 	$(COMPOSE) run --rm --build dbt build
+
+painel: up ## Sobe o painel Streamlit (http://localhost:8501); rode make dbt-build antes
+	$(COMPOSE) --profile painel up -d --build painel
 
 run-local: ## Roda o pipeline no host (exige banco acessível e variáveis POSTGRES_* no ambiente)
 	PYTHONPATH=src $(PY) -m pipeline.run
