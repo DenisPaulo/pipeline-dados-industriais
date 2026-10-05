@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: dim_maquina
+    description: >
+      Dimensão de máquina: uma linha por máquina, com a fonte, a data de cadastro e os totais
+      de leituras e falhas (agregados a partir de int_leituras_enriquecidas). Base para
+      filtrar e agrupar nas consultas dos marts.
+    columns:
+      - name: id_maquina
+        description: Identificador da máquina (chave da dimensão).
+        data_tests:
+          - unique
+          - not_null
+      - name: fonte
+        description: Origem dos dados da máquina ('ai4i' ou 'simulado').
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["ai4i", "simulado"]
+      - name: criada_em
+        description: Momento em que a máquina foi cadastrada no banco.
+        data_tests:
+          - not_null
+      - name: total_leituras
+        description: Quantidade de leituras da máquina (0 se ainda não tiver leituras).
+        data_tests:
+          - not_null
+      - name: total_falhas
+        description: Quantidade de leituras com falha da máquina (0 se nunca falhou).
+        data_tests:
+          - not_null

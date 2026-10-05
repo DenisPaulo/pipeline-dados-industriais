@@ -28,3 +28,9 @@ models:
       # os dados atuais. Se ficar lenta quando os dados crescerem, troque para `table`.
       +materialized: view
       +schema: intermediate
+    marts:
+      # Marts = tabelas finais para consulta (painel, SQL ad hoc). Materializadas como TABLE
+      # porque são o destino: leitura frequente, cálculo feito uma vez no `dbt build`.
+      # Dimensões (dim_*) descrevem entidades; fatos (fct_*) virão nas próximas etapas.
+      +materialized: table
+      +schema: marts
