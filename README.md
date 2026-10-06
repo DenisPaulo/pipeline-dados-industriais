@@ -201,7 +201,7 @@ FROM marts.fct_falhas_diarias;
 ## Roadmap
 
 - **V2 (feito):** modelagem com **dbt** (staging, intermediate, marts + testes) e **painel** Streamlit sobre os marts.
-- **V3:** orquestração com **Airflow** e execução em **nuvem** (armazenamento de objetos para o Parquet e banco gerenciado).
+- **Próximas versões (V3 em diante):** veja o [roadmap detalhado](docs/ROADMAP.md).
 
 ## Fonte dos dados
 
