@@ -193,9 +193,9 @@ FROM marts.fct_falhas_diarias;
 
 ## O que foi verificado
 
-- `ruff` + 31 testes rápidos e 3 de integração (CI).
+- `ruff` + 35 testes rápidos e 3 de integração (CI).
 - Pipeline ponta a ponta (Postgres local e Docker no Windows / Docker Desktop WSL 2) com os números da tabela acima.
-- `dbt build` com `PASS=60` (local e via `docker compose run --rm --build dbt`).
+- `dbt build` com `PASS=60` (7 modelos + 53 testes), local e via `docker compose run --rm --build dbt`.
 - Painel: ver seção "Painel Streamlit" e o CI.
 
 ## Roadmap
