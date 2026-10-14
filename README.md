@@ -1,19 +1,22 @@
 # 🏭 Pipeline de Dados Industriais
 
+[![CI](https://github.com/DenisPaulo/pipeline-dados-industriais/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisPaulo/pipeline-dados-industriais/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
-![dbt](https://img.shields.io/badge/dbt-staging%20%7C%20intermediate%20%7C%20marts-FF694B)
-![Streamlit](https://img.shields.io/badge/Streamlit-painel-FF4B4B?logo=streamlit&logoColor=white)
+![dbt](https://img.shields.io/badge/dbt-1.12-FF694B?logo=dbt&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
-![Parquet](https://img.shields.io/badge/Parquet-camada%20bruta-50ABF1)
-![Ruff](https://img.shields.io/badge/lint-ruff-D7FF64)
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-[![CI](https://github.com/DenisPaulo/pipeline-dados-industriais/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisPaulo/pipeline-dados-industriais/actions/workflows/ci.yml)
 
 > **Como transformar leituras sujas de sensores em tabelas confiáveis — e depois em um painel?**
 > Pipeline ETL + modelagem com **dbt** + painel Streamlit. Construído por quem vem do chão de fábrica (robôs industriais, CLP e manutenção preventiva).
 
 > ⚠️ **Projeto educacional / de portfólio.** Os dados são sintéticos e o pipeline não foi projetado para produção (sem orquestração, monitoramento nem controle de acesso).
+
+![Painel Streamlit lendo os marts do dbt: 18 máquinas, 24.511 leituras, 556 leituras com falha e gráfico de falhas por máquina](docs/img/painel.png)
+
+## Problema de negócio
+
+Na indústria, sensores geram dados sujos: valores nulos, outliers, leituras duplicadas e tipos errados. Esses erros causam alertas falsos e indicadores de falha errados. Com isso, a equipe perde a confiança nos dados usados para decidir a manutenção. Este pipeline limpa os dados de forma auditável, carrega no banco de forma idempotente e entrega marts testados para analisar as falhas por máquina.
 
 ---
 
