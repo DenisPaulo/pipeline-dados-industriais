@@ -36,6 +36,12 @@ models:
     description: >
       Fato de leituras: uma linha por leitura de sensores, com medições, indicador de falha
       e modos agregados. Aponta para dim_maquina via id_maquina (star schema).
+    data_tests:
+      # Volume: hoje são 24.511 leituras; menos que o mínimo indica dado faltando.
+      - volume_minimo:
+          name: volume_minimo_fct_leituras
+          arguments:
+            minimo: "{{ var('volume_minimo_leituras', 24000) }}"
     columns:
       - name: id_leitura
         description: Identificador da leitura (chave do fato; grain = 1 linha por leitura).
@@ -86,6 +92,12 @@ models:
       falha (qtd_falhas) e lista os conjuntos de modos distintos do dia. A unicidade da
       chave (id_maquina, data_ref) é garantida pelo teste singular
       fct_falhas_diarias_chave_unica (sem dbt_utils).
+    data_tests:
+      # Volume: precisa ter pelo menos 1 dia com falha (tabela vazia = algo quebrou).
+      - volume_minimo:
+          name: volume_minimo_fct_falhas_diarias
+          arguments:
+            minimo: 1
     columns:
       - name: id_maquina
         description: Máquina (chave estrangeira para dim_maquina).

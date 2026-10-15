@@ -56,6 +56,10 @@ def test_carga_idempotente(conn):
     r2 = load.carregar(conn, leituras, falhas)
     assert r2["leituras_inseridas"] == 0 and r2["leituras_atualizadas"] == 0 and r2["falhas_inseridas"] == 0
     assert load.contagens(conn) == {"maquinas": 2, "leituras": 3, "falhas": 3}
+    # cada carga vira uma linha no histórico (usado pelo freshness e pelo teste de volume)
+    with conn.cursor() as cur:
+        cur.execute("SELECT leituras_inseridas, total_leituras FROM cargas ORDER BY carga_id")
+        assert cur.fetchall() == [(3, 3), (0, 3)]
 
 
 def test_reprocessamento_atualiza_e_remove_falha_obsoleta(conn):

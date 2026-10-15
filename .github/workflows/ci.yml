@@ -115,5 +115,8 @@ jobs:
       - name: Carregar dados (pipeline ETL)
         run: PYTHONPATH=src python -m pipeline.run
 
+      - name: dbt source freshness
+        run: dbt source freshness --project-dir dbt --profiles-dir dbt --no-use-colors
+
       - name: dbt build
         run: dbt build --project-dir dbt --profiles-dir dbt --no-use-colors

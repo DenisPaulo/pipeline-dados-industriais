@@ -29,6 +29,17 @@ CREATE TABLE IF NOT EXISTS falhas (
     CONSTRAINT uq_falhas_leitura_modo UNIQUE (leitura_id, modo)
 );
 
+-- Histórico de cargas (V3): uma linha por execução da carga. Serve para o
+-- "dbt source freshness" (quando foi a última carga?) e para o teste de volume
+-- (o total de leituras caiu muito em relação à carga anterior?).
+CREATE TABLE IF NOT EXISTS cargas (
+    carga_id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    carregado_em          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    leituras_inseridas    INTEGER NOT NULL,
+    leituras_atualizadas  INTEGER NOT NULL,
+    total_leituras        INTEGER NOT NULL
+);
+
 -- Índices (o UNIQUE de leituras já cobre buscas por máquina + intervalo de tempo)
 CREATE INDEX IF NOT EXISTS ix_leituras_ts ON leituras (ts);
 CREATE INDEX IF NOT EXISTS ix_leituras_falha ON leituras (maquina_id, ts) WHERE falha;

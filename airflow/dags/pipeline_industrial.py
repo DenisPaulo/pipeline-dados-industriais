@@ -1,7 +1,8 @@
-"""DAG do pipeline industrial: ETL Python -> dbt build.
+"""DAG do pipeline industrial: ETL Python -> freshness -> dbt build.
 
 - etl: roda o pipeline existente (ingestão -> limpeza -> carga no PostgreSQL).
-- dbt_build: cria staging, intermediate e marts e roda os testes do dbt.
+- dbt_source_freshness: os dados foram carregados recentemente? (tabela cargas).
+- dbt_build: cria staging, intermediate e marts e roda os testes do dbt (inclui volume).
 
 Os caminhos podem ser trocados por variáveis de ambiente (os padrões são os do container).
 """
@@ -56,6 +57,14 @@ with DAG(
         bash_command=f"cd {PIPELINE_HOME} && PYTHONPATH=src {ETL_PYTHON} -m pipeline.run",
     )
 
+    dbt_source_freshness = BashOperator(
+        task_id="dbt_source_freshness",
+        bash_command=(
+            f"{DBT_BIN} source freshness --project-dir {PIPELINE_HOME}/dbt"
+            f" --profiles-dir {PIPELINE_HOME}/dbt --no-use-colors"
+        ),
+    )
+
     dbt_build = BashOperator(
         task_id="dbt_build",
         bash_command=(
@@ -64,4 +73,4 @@ with DAG(
         ),
     )
 
-    etl >> dbt_build
+    etl >> dbt_source_freshness >> dbt_build
