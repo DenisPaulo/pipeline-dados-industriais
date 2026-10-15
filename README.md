@@ -204,7 +204,7 @@ FROM marts.fct_falhas_diarias;
 ## Roadmap
 
 - **V2 (feito):** modelagem com **dbt** (staging, intermediate, marts + testes) e **painel** Streamlit sobre os marts.
-- **V3 (próxima):** orquestração com **Airflow** e mais testes de qualidade (freshness, volume, alertas).
+- **V3 (em andamento, PR #1):** orquestração com **Airflow** ([como subir](airflow/README.md)) e mais testes de qualidade (freshness, volume, alertas).
 - **V4:** **Databricks** (Free Edition): bronze/silver/gold com PySpark em Delta Lake.
 - **V5:** **nuvem** (Azure Blob/ADLS ou AWS S3), IAM e custo.
 - **Depois:** streaming com Kafka.
