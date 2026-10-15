@@ -3,18 +3,19 @@
 O Airflow roda o pipeline inteiro em ordem e de forma agendada:
 
 ```
-etl  >>  dbt_build
+etl  >>  dbt_source_freshness  >>  dbt_build
 ```
 
-1. **`etl`**: roda o ETL em Python (`python -m pipeline.run`). Ele baixa/gera os dados, limpa e carrega no PostgreSQL.
-2. **`dbt_build`**: roda `dbt build` (modelos + testes: staging → intermediate → marts).
+1. **`etl`**: roda o ETL em Python (`python -m pipeline.run`). Ele baixa/gera os dados, limpa e carrega no PostgreSQL (e registra uma linha na tabela `cargas`).
+2. **`dbt_source_freshness`**: `dbt source freshness` — a última carga foi há menos de 24/48 h?
+3. **`dbt_build`**: `dbt build` (modelos + testes, incluindo os de **volume**).
 
 ## Conceitos básicos
 
 | Termo | O que é |
 |---|---|
 | **DAG** | O "fluxo de trabalho": a lista de tarefas e a ordem entre elas. Aqui: `pipeline_industrial`, em [`dags/pipeline_industrial.py`](dags/pipeline_industrial.py). |
-| **Task (tarefa)** | Um passo do fluxo. Aqui são duas: `etl` e `dbt_build`. O `dbt_build` só roda se o `etl` der certo. |
+| **Task (tarefa)** | Um passo do fluxo. Aqui são três: `etl`, `dbt_source_freshness` e `dbt_build`. Cada uma só roda se a anterior der certo. |
 | **Scheduler** | O processo que olha o relógio e dispara a DAG na hora certa (`@daily` = uma vez por dia, à meia-noite UTC). |
 | **Retry** | Nova tentativa automática quando uma tarefa falha. Aqui: até **2** novas tentativas, esperando **1 minuto** entre elas. |
 | **Alerta** | Se uma tarefa falhar de vez, a função `alerta_falha` escreve uma linha `ALERTA DO PIPELINE ...` no log. |

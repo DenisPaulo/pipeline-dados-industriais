@@ -93,7 +93,7 @@ Com as duas fontes e semente 42:
 | Limpeza | 24.511 válidas e **1.760 descartadas** (143 duplicadas, 1.180 sensor nulo, 154 não numéricas, 283 fora da faixa física) |
 | Carga (`public`) | 18 máquinas, 24.511 leituras, 586 registros de falha (modos) |
 | **dbt marts** | `dim_maquina` = 18; `fct_leituras` = 24.511; `fct_falhas_diarias` = 123 linhas (`sum(qtd_falhas)` = 556 leituras com falha) |
-| **dbt build** | `PASS=60` (7 modelos + 53 testes) |
+| **dbt build** | `PASS=63` (7 modelos + 56 testes) |
 | Idempotência do ETL | segunda carga: 0 inseridas, 0 atualizadas |
 
 A conferência da limpeza é sempre `entrada = válidas + descartadas`. Os 586 de `falhas` contam *modos*; os 556 de `houve_falha` / `qtd_falhas` contam *leituras* com falha (uma leitura pode ter vários modos).
@@ -198,13 +198,13 @@ FROM marts.fct_falhas_diarias;
 
 - `ruff` + 35 testes rápidos e 3 de integração (CI).
 - Pipeline ponta a ponta (Postgres local e Docker no Windows / Docker Desktop WSL 2) com os números da tabela acima.
-- `dbt build` com `PASS=60` (7 modelos + 53 testes), local e via `docker compose run --rm --build dbt`.
+- `dbt build` com `PASS=63` (7 modelos + 56 testes), local e via `docker compose run --rm --build dbt`.
 - Painel: ver seção "Painel Streamlit" e o CI.
 
 ## Roadmap
 
 - **V2 (feito):** modelagem com **dbt** (staging, intermediate, marts + testes) e **painel** Streamlit sobre os marts.
-- **V3 (em andamento, PR #1):** orquestração com **Airflow** ([como subir](airflow/README.md)) e mais testes de qualidade (freshness, volume, alertas).
+- **V3 (em andamento):** orquestração com **Airflow** ([como subir](airflow/README.md)) + freshness e volume no dbt.
 - **V4:** **Databricks** (Free Edition): bronze/silver/gold com PySpark em Delta Lake.
 - **V5:** **nuvem** (Azure Blob/ADLS ou AWS S3), IAM e custo.
 - **Depois:** streaming com Kafka.

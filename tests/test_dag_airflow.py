@@ -1,4 +1,4 @@
-"""Teste leve da DAG do Airflow: importa sem erros e tem a ordem etl >> dbt_build.
+"""Teste leve da DAG do Airflow: importa sem erros e tem a ordem etl >> dbt_source_freshness >> dbt_build.
 
 Pulado se o Airflow não estiver instalado (o CI de testes rápidos não instala o Airflow).
 """
@@ -22,7 +22,8 @@ def test_dag_importa_sem_erros_e_ordem_das_tasks():
     assert bag.import_errors == {}
     dag = bag.get_dag("pipeline_industrial")
     assert dag is not None
-    assert set(dag.task_ids) == {"etl", "dbt_build"}
-    assert dag.get_task("etl").downstream_task_ids == {"dbt_build"}
+    assert set(dag.task_ids) == {"etl", "dbt_source_freshness", "dbt_build"}
+    assert dag.get_task("etl").downstream_task_ids == {"dbt_source_freshness"}
+    assert dag.get_task("dbt_source_freshness").downstream_task_ids == {"dbt_build"}
     assert dag.get_task("dbt_build").retries == 2
     assert dag.catchup is False

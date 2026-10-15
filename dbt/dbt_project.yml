@@ -34,3 +34,9 @@ models:
       # Dimensões (dim_*) descrevem entidades; fatos (fct_*) virão nas próximas etapas.
       +materialized: table
       +schema: marts
+
+# Variáveis dos testes de volume (V3). Podem ser trocadas na linha de comando:
+#   dbt build --vars '{volume_minimo_leituras: 30000}'
+vars:
+  volume_minimo_leituras: 24000
+  queda_maxima: 0.1

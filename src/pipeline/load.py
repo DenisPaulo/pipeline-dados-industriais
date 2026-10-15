@@ -81,6 +81,13 @@ SELECT count(*) FROM r;
 """
 
 
+# Registra a carga no histórico (mesma transação: só fica gravado se a carga der certo).
+SQL_REGISTRAR_CARGA = """
+INSERT INTO cargas (leituras_inseridas, leituras_atualizadas, total_leituras)
+SELECT %s, %s, count(*) FROM leituras;
+"""
+
+
 def para_csv(df: pd.DataFrame, colunas: list[str]) -> io.StringIO:
     """Serializa o DataFrame em CSV (sem cabeçalho) no formato esperado pelo COPY."""
     buf = io.StringIO()
@@ -135,6 +142,7 @@ def carregar(conn, leituras: pd.DataFrame, falhas: pd.DataFrame) -> dict[str, in
             falhas_removidas = cur.rowcount
             cur.execute(SQL_FALHAS)
             (falhas_novas,) = cur.fetchone()
+            cur.execute(SQL_REGISTRAR_CARGA, (int(inseridas), int(atualizadas)))
         conn.commit()
     except Exception:
         conn.rollback()

@@ -43,6 +43,28 @@ sources:
           - name: falha
             description: Verdadeiro se a máquina falhou nesta leitura.
 
+      - name: cargas
+        description: >
+          Histórico de cargas (V3): uma linha por execução da carga do pipeline Python.
+          É a tabela usada no "dbt source freshness": se a última carga for antiga,
+          o dbt avisa (warn) ou dá erro (error).
+        config:
+          loaded_at_field: carregado_em
+          freshness:
+            warn_after: {count: 24, period: hour}
+            error_after: {count: 48, period: hour}
+        columns:
+          - name: carga_id
+            description: Identificador da carga (chave primária).
+          - name: carregado_em
+            description: Momento em que a carga terminou (com fuso horário).
+          - name: leituras_inseridas
+            description: Leituras novas nesta carga.
+          - name: leituras_atualizadas
+            description: Leituras que já existiam e mudaram nesta carga.
+          - name: total_leituras
+            description: Total de leituras no banco ao final da carga.
+
       - name: falhas
         description: Uma linha por modo de falha de uma leitura com falha (uma leitura pode ter mais de um modo).
         columns:

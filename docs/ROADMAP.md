@@ -38,14 +38,14 @@ Tudo abaixo está no repositório e foi verificado (localmente e no CI).
 
 A ordem abaixo é a ordem planejada. Cada versão usa o que a anterior construiu.
 
-### V3: orquestração e qualidade (em andamento, PR #1)
+### V3: orquestração e qualidade (em andamento)
 
-- Subir o **Airflow** localmente, no Docker.
-- Criar uma DAG que roda o ETL e depois o `dbt build`.
-- Enviar um **alerta** quando alguma etapa falhar.
-- Adicionar testes de **freshness** (`dbt source freshness`): os dados estão atualizados?
-- Adicionar testes de **volume**: chegou a quantidade esperada de linhas?
-- Passar a trabalhar com **branch + Pull Request**, em vez de enviar direto para a `main`.
+- ✅ Subir o **Airflow** localmente, no Docker (PR #1).
+- ✅ Criar uma DAG que roda o ETL e depois o `dbt build` (PR #1).
+- ✅ Enviar um **alerta** quando alguma etapa falhar (PR #1).
+- ✅ Adicionar testes de **freshness** (`dbt source freshness` na tabela `cargas`).
+- ✅ Adicionar testes de **volume** (`volume_minimo` + `volume_sem_queda_brusca`); `dbt build` agora com **PASS=63**.
+- ✅ Passar a trabalhar com **branch + Pull Request**, em vez de enviar direto para a `main`.
 
 ### V4: Databricks (Free Edition)
 
@@ -96,12 +96,12 @@ Como cada área de Engenharia de Dados aparece neste projeto.
 | SQL | ✅ Feito | `sql/queries.sql` (CTEs, window functions) e modelos dbt |
 | Banco de dados / DW (OLTP x OLAP) | ✅ Feito | Tabelas normalizadas em `public` (OLTP) e modelo estrela nos `marts` (OLAP) |
 | ETL / ELT | ✅ Feito | ETL em Python + ELT com dbt dentro do PostgreSQL |
-| Orquestração | 🟡 Em andamento (V3, PR #1) | Airflow com a DAG `pipeline_industrial` ([airflow/README.md](../airflow/README.md)) |
+| Orquestração | ✅ Feito (V3, PR #1) | Airflow com a DAG `pipeline_industrial` ([airflow/README.md](../airflow/README.md)) |
 | Spark | 🔜 Planejado (V4 Databricks) | PySpark no Databricks Free Edition |
 | Cloud | 🔜 Planejado (V5) | Azure Blob Storage / ADLS ou AWS S3 |
 | Lake / Lakehouse | 🔜 Planejado (V4 Databricks) | Bronze/silver/gold em Delta Lake; hoje as camadas bruta → staging → marts já lembram a arquitetura medalhão |
 | Streaming | 🔜 Planejado (depois) | Kafka |
-| Qualidade / Observabilidade | 🟡 Em parte | Testes do dbt feitos; freshness, volume e alertas na V3 |
+| Qualidade / Observabilidade | ✅ Feito (V3) | Testes do dbt + freshness (`cargas`) + volume (`volume_minimo`, queda brusca) + alerta no Airflow |
 | Engenharia de software | ✅ Feito | Git, Docker, testes, CI e documentação |
 | Projetos | ✅ Feito | Projeto completo e documentado, evoluindo por versões |
 

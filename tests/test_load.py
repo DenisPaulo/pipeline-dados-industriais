@@ -28,7 +28,7 @@ def test_para_csv_nao_altera_o_dataframe():
 
 
 def test_schema_tem_tabelas_chaves_e_indices():
-    for tabela in ("maquinas", "leituras", "falhas"):
+    for tabela in ("maquinas", "leituras", "falhas", "cargas"):
         assert re.search(rf"CREATE TABLE IF NOT EXISTS {tabela}\b", SCHEMA)
     assert "PRIMARY KEY" in SCHEMA and "REFERENCES maquinas" in SCHEMA and "REFERENCES leituras" in SCHEMA
     assert "UNIQUE (maquina_id, ts)" in SCHEMA  # base da idempotência

@@ -13,7 +13,7 @@ O pipeline Python (V1) carrega as tabelas `maquinas`, `leituras` e `falhas` no P
 | `requirements.txt` | Versões fixas: `dbt-core 1.12.5` e `dbt-postgres 1.11.0`. |
 | `Dockerfile` | Imagem Python com o dbt instalado (usada pelo serviço `dbt` do `docker-compose.yml`). |
 | `macros/generate_schema_name.sql` | Faz o schema ser exatamente o definido na camada (`staging`, `intermediate`, `marts`) e não `analytics_staging`, que é o comportamento padrão do dbt. |
-| `models/staging/_sources.yml` | Declara as *sources*: tabelas que o dbt não cria (`maquinas`, `leituras`, `falhas`), com descrição das colunas. |
+| `models/staging/_sources.yml` | Declara as *sources*: tabelas que o dbt não cria (`maquinas`, `leituras`, `falhas`, `cargas`), com descrição das colunas. Freshness na tabela `cargas`. |
 | `models/staging/stg_maquinas.sql` | View de máquinas (`maquina_id` → `id_maquina`). |
 | `models/staging/stg_leituras.sql` | View de leituras: nomes claros (`ts` → `medido_em`, `falha` → `houve_falha`) e temperaturas em Celsius (`temperatura_ar_c`, `temperatura_processo_c` = Kelvin − 273,15). |
 | `models/staging/stg_falhas.sql` | View de falhas (`modo` → `modo_falha`). |
@@ -29,8 +29,41 @@ O pipeline Python (V1) carrega as tabelas `maquinas`, `leituras` e `falhas` no P
 | `tests/fct_leituras_sem_perda.sql` | Teste singular: a contagem de `fct_leituras` tem que ser igual à de `stg_leituras`. |
 | `models/marts/fct_falhas_diarias.sql` | Fato agregado: falhas por máquina e por dia (`qtd_falhas`, `modos_falha`). Tabela no schema `marts`. |
 | `tests/fct_falhas_diarias_chave_unica.sql` | Teste singular: a chave (`id_maquina`, `data_ref`) é única (substitui dbt_utils.unique_combination_of_columns). |
+| `tests/generic/volume_minimo.sql` | Teste genérico de **volume**: falha se o modelo tiver menos linhas que o mínimo. Usado em `fct_leituras` (≥ 24.000) e `fct_falhas_diarias` (≥ 1). |
+| `tests/volume_sem_queda_brusca.sql` | Teste singular: o total de leituras da última carga não pode cair mais que 10% em relação à anterior (usa a tabela `cargas`). |
 
 Os arquivos que começam com `_` são só configuração (YAML); os `.sql` são os modelos.
+
+## Qualidade dos dados (V3): freshness e volume
+
+Dois tipos de teste novos, fáceis de explicar:
+
+### Freshness — "os dados estão atualizados?"
+
+O comando `dbt source freshness` olha a coluna `carregado_em` da tabela **`cargas`** (uma linha por execução do ETL) e pergunta: a última carga foi recente?
+
+| Resultado | Quando |
+|---|---|
+| PASS | última carga há menos de 24 h |
+| WARN | entre 24 h e 48 h |
+| ERROR | há mais de 48 h |
+
+Por que uma tabela `cargas` e não a coluna `ts` das leituras? Porque `ts` é o **momento da medição** (dados históricos do AI4I e simulados). Se usássemos `ts`, o freshness falharia sempre. `carregado_em` é o **momento em que o pipeline carregou** os dados — isso sim muda a cada execução.
+
+```bash
+dbt source freshness --project-dir dbt --profiles-dir dbt
+```
+
+### Volume — "chegou a quantidade esperada?"
+
+1. **`volume_minimo`** (teste genérico): `fct_leituras` precisa ter pelo menos 24.000 linhas; `fct_falhas_diarias` pelo menos 1. O limiar de leituras vem da variável `volume_minimo_leituras` (padrão 24.000).
+2. **`volume_sem_queda_brusca`**: compara a última carga com a anterior; se o total de leituras cair mais de 10%, falha.
+
+Os testes de volume rodam dentro do `dbt build` (junto com os outros). Para ver o de volume mínimo falhar de propósito (não faça commit disso):
+
+```bash
+dbt test --select volume_minimo_fct_leituras --vars '{volume_minimo_leituras: 30000}'
+```
 
 ## Como rodar (Docker)
 
@@ -74,5 +107,5 @@ dbt build --profiles-dir .
 
 ## Resultado esperado
 
-`dbt build` cria 4 views + 3 tabelas e executa os testes: `Done. PASS=60 WARN=0 ERROR=0 SKIP=0 TOTAL=60` (7 modelos + 53 testes). Com a carga padrão: `fct_leituras` = 24.511; `dim_maquina` = 18 (soma `total_leituras` = 24.511); `fct_falhas_diarias` = 123 linhas com `sum(qtd_falhas)` = 556.
+`dbt build` cria 4 views + 3 tabelas e executa os testes: `Done. PASS=63 WARN=0 ERROR=0 SKIP=0 TOTAL=63` (7 modelos + 56 testes: 53 da V2 + 3 de volume da V3). Com a carga padrão: `fct_leituras` = 24.511; `dim_maquina` = 18 (soma `total_leituras` = 24.511); `fct_falhas_diarias` = 123 linhas com `sum(qtd_falhas)` = 556.
 Se um teste falhar, o dbt mostra qual e quantas linhas violaram a regra.
