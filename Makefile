@@ -1,4 +1,4 @@
-.PHONY: help install up down run run-local dbt-debug dbt-build painel test test-integration lint format queries psql clean
+.PHONY: help install up down run run-local dbt-debug dbt-build painel airflow airflow-down test test-integration lint format queries psql clean
 
 PY ?= python
 COMPOSE ?= docker compose
@@ -27,6 +27,12 @@ dbt-build: up ## dbt: cria os modelos e roda os testes (V2; rode `make run` ante
 
 painel: up ## Sobe o painel Streamlit (http://localhost:8501); rode make dbt-build antes
 	$(COMPOSE) --profile painel up -d --build painel
+
+airflow: up ## Sobe o Airflow (V3) em http://localhost:8080 — DAG pipeline_industrial
+	$(COMPOSE) --profile airflow up -d --build airflow
+
+airflow-down: ## Para o Airflow e o banco (mantém volumes)
+	$(COMPOSE) --profile airflow down
 
 run-local: ## Roda o pipeline no host (exige banco acessível e variáveis POSTGRES_* no ambiente)
 	PYTHONPATH=src $(PY) -m pipeline.run
