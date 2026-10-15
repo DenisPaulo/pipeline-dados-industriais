@@ -38,7 +38,7 @@ Tudo abaixo está no repositório e foi verificado (localmente e no CI).
 
 A ordem abaixo é a ordem planejada. Cada versão usa o que a anterior construiu.
 
-### V3: orquestração e qualidade
+### V3: orquestração e qualidade (em andamento, PR #1)
 
 - Subir o **Airflow** localmente, no Docker.
 - Criar uma DAG que roda o ETL e depois o `dbt build`.
@@ -96,7 +96,7 @@ Como cada área de Engenharia de Dados aparece neste projeto.
 | SQL | ✅ Feito | `sql/queries.sql` (CTEs, window functions) e modelos dbt |
 | Banco de dados / DW (OLTP x OLAP) | ✅ Feito | Tabelas normalizadas em `public` (OLTP) e modelo estrela nos `marts` (OLAP) |
 | ETL / ELT | ✅ Feito | ETL em Python + ELT com dbt dentro do PostgreSQL |
-| Orquestração | 🔜 Planejado (V3) | Airflow |
+| Orquestração | 🟡 Em andamento (V3, PR #1) | Airflow com a DAG `pipeline_industrial` ([airflow/README.md](../airflow/README.md)) |
 | Spark | 🔜 Planejado (V4 Databricks) | PySpark no Databricks Free Edition |
 | Cloud | 🔜 Planejado (V5) | Azure Blob Storage / ADLS ou AWS S3 |
 | Lake / Lakehouse | 🔜 Planejado (V4 Databricks) | Bronze/silver/gold em Delta Lake; hoje as camadas bruta → staging → marts já lembram a arquitetura medalhão |

@@ -16,6 +16,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    mem_limit: ${POSTGRES_MEM_LIMIT:-512m}
     restart: unless-stopped
 
   app:
@@ -76,5 +77,66 @@ services:
       POSTGRES_PORT: "5432"
     restart: unless-stopped
 
+  airflow:
+    # V3: Airflow orquestra o pipeline (DAG pipeline_industrial: etl >> dbt_build).
+    #   docker compose --profile airflow up -d --build airflow
+    # UI em http://localhost:8080 (login AIRFLOW_ADMIN_USER / AIRFLOW_ADMIN_PASSWORD do .env).
+    # Usa o banco "airflow" (criado automaticamente) no mesmo PostgreSQL. Modo leve: limitado a 2 GB de RAM (mem_limit).
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    profiles: ["airflow"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${AIRFLOW_PORT:-8080}:8080"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pipeline}
+      POSTGRES_USER: ${POSTGRES_USER:-pipeline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no arquivo .env}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      PIPELINE_FONTES: ${PIPELINE_FONTES:-ai4i,simulado}
+      PIPELINE_SEMENTE: ${PIPELINE_SEMENTE:-42}
+      AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:?defina AIRFLOW_ADMIN_USER no arquivo .env}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?defina AIRFLOW_ADMIN_PASSWORD no arquivo .env}
+      # Conexão com o banco de metadados (arquivo gerado pelo iniciar.sh), também para "exec"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN_CMD: cat /opt/airflow/conexao_db
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: ${AIRFLOW_ADMIN_USER:?defina AIRFLOW_ADMIN_USER no .env}:admin
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/senhas_ui.json
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      # Modo leve: uma tarefa por vez, 1 worker na API e 1 processo lendo DAGs (cabe em ~2 GB)
+      AIRFLOW__CORE__PARALLELISM: "1"
+      AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "1"
+      AIRFLOW__API__WORKERS: "1"
+      AIRFLOW__DAG_PROCESSOR__PARSING_PROCESSES: "1"
+      AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "60"
+      AIRFLOW__DAG_PROCESSOR__MIN_FILE_PROCESS_INTERVAL: "60"
+      AIRFLOW__CORE__AUTH_MANAGER: airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
+      # dbt: arquivos gerados fora da pasta montada (somente leitura) e sem telemetria
+      DBT_TARGET_PATH: /tmp/dbt/target
+      DBT_LOG_PATH: /tmp/dbt/logs
+      DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./src:/opt/pipeline/src:ro
+      - ./sql:/opt/pipeline/sql:ro
+      - ./dbt:/opt/pipeline/dbt:ro
+      - airflow_dados:/opt/pipeline/data
+      - airflow_logs:/opt/airflow/logs
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "-s", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    # Modo leve: limite de memória do container (ajuste AIRFLOW_MEM_LIMIT no .env se precisar)
+    mem_limit: ${AIRFLOW_MEM_LIMIT:-2g}
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  airflow_dados:
+  airflow_logs:
