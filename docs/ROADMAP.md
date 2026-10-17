@@ -47,12 +47,15 @@ A ordem abaixo é a ordem planejada. Cada versão usa o que a anterior construiu
 - ✅ Adicionar testes de **volume** (`volume_minimo` + `volume_sem_queda_brusca`); `dbt build` agora com **PASS=63**.
 - ✅ Passar a trabalhar com **branch + Pull Request**, em vez de enviar direto para a `main`.
 
-### V4: Databricks (Free Edition)
+### V4: Databricks (Free Edition) (em andamento)
 
-- Levar o Parquet de leituras para o **Databricks Free Edition**.
-- Montar as camadas **bronze → silver → gold** com **PySpark**, salvando em **Delta Lake**.
-- Refazer o `fct_falhas_diarias` na camada gold e comparar com o resultado do dbt.
-- Estudar os cursos de fundamentos da **Databricks Academy**.
+Repositório: [pipeline-industrial-databricks](https://github.com/DenisPaulo/pipeline-industrial-databricks).
+
+- ✅ Levar as mesmas fontes (AI4I + simulado) para o **Databricks Free Edition** (Unity Catalog Volume).
+- ✅ Montar as camadas **bronze → silver → gold** com **PySpark**, salvando em **Delta Lake**.
+- ✅ Refazer o `fct_falhas_diarias` na camada gold e comparar com o resultado do dbt (mesmos números no teste local/CI).
+- 🔜 Rodar os notebooks no workspace do Free Edition.
+- 🔜 Estudar os cursos de fundamentos da **Databricks Academy**.
 
 ### V5: nuvem
 
@@ -74,11 +77,11 @@ Assim fica fácil comparar abordagens diferentes para o mesmo problema.
 
 **Este repositório é a base:** PostgreSQL + dbt + Airflow.
 
-Repositórios planejados (os nomes são propostas; ainda não foram criados):
+Repositórios da estratégia (os ainda não criados têm nomes provisórios):
 
 | Repositório | Versão | Foco |
 |---|---|---|
-| `pipeline-industrial-databricks` | V4 | PySpark + Delta Lake no Databricks |
+| [`pipeline-industrial-databricks`](https://github.com/DenisPaulo/pipeline-industrial-databricks) | V4 (criado) | PySpark + Delta Lake no Databricks |
 | `pipeline-industrial-cloud` | V5 | Armazenamento, IAM e custo na nuvem |
 | `pipeline-industrial-streaming` | Depois | Kafka e dados em tempo real |
 
@@ -97,9 +100,9 @@ Como cada área de Engenharia de Dados aparece neste projeto.
 | Banco de dados / DW (OLTP x OLAP) | ✅ Feito | Tabelas normalizadas em `public` (OLTP) e modelo estrela nos `marts` (OLAP) |
 | ETL / ELT | ✅ Feito | ETL em Python + ELT com dbt dentro do PostgreSQL |
 | Orquestração | ✅ Feito (V3, PR #1) | Airflow com a DAG `pipeline_industrial` ([airflow/README.md](../airflow/README.md)) |
-| Spark | 🔜 Planejado (V4 Databricks) | PySpark no Databricks Free Edition |
+| Spark | 🟡 Em andamento (V4) | PySpark no [repositório Databricks](https://github.com/DenisPaulo/pipeline-industrial-databricks) |
 | Cloud | 🔜 Planejado (V5) | Azure Blob Storage / ADLS ou AWS S3 |
-| Lake / Lakehouse | 🔜 Planejado (V4 Databricks) | Bronze/silver/gold em Delta Lake; hoje as camadas bruta → staging → marts já lembram a arquitetura medalhão |
+| Lake / Lakehouse | 🟡 Em andamento (V4) | Bronze/silver/gold em Delta Lake no [repositório Databricks](https://github.com/DenisPaulo/pipeline-industrial-databricks) |
 | Streaming | 🔜 Planejado (depois) | Kafka |
 | Qualidade / Observabilidade | ✅ Feito (V3) | Testes do dbt + freshness (`cargas`) + volume (`volume_minimo`, queda brusca) + alerta no Airflow |
 | Engenharia de software | ✅ Feito | Git, Docker, testes, CI e documentação |
